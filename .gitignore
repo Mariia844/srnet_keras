@@ -1,0 +1,6 @@
+
+.vscode/
+misc
+src/__pycache__
+*.pyc
+src/model_config.py
