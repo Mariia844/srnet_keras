@@ -35,7 +35,8 @@ def main():
     train_data = get_train_data()
     # Clear RAM unused data
     clear_heavy_memory_storage()
-    print(f"{(time() - start) / 60: .2f} min elapsed.")
+    min_elapsed = (time() - start) / 60
+    print("{0:.2f} min elapsed".format(min_elapsed))
 
     train_model(model, train_data)
 
