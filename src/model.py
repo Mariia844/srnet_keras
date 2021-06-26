@@ -1,7 +1,6 @@
 import tensorflow.keras.layers as L
 from tensorflow.keras import Model, metrics
 from model_config import *
-from model_data import *
 # from tensorflow.keras.metrics import AUC
 
 
