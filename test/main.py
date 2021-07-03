@@ -14,7 +14,7 @@ RGB = False
 DROPOUT_RATE=0.1
 EPOCHS = 50
 BATCH_SIZE = 4
-IMAGES_TO_PICK = 80002
+IMAGES_TO_PICK = 2000
 
 TRAINING_TYPE = 'GPU' # TPU, GPU, CPU
 
@@ -179,12 +179,13 @@ def main():
       seed_everything()
 
       # Create model
-      if (os.path.exists(LOAD_MODEL_PATH)):
-        from keras.models import load_model
-        print(f"Loading model from ${LOAD_MODEL_PATH}")
-        model = load_model(LOAD_MODEL_PATH)
-      else:
-        model = make_model(input_shape=(IMG_SIZE, IMG_SIZE, 1), num_type2=4, dropout_rate=DROPOUT_RATE)
+    #   if (os.path.exists(LOAD_MODEL_PATH)):
+    #     from keras.models import load_model
+    #     print(f"Loading model from ${LOAD_MODEL_PATH}")
+    #     model = load_model(LOAD_MODEL_PATH)
+    #   else:
+    #     model = make_model(input_shape=(IMG_SIZE, IMG_SIZE, 1), num_type2=4, dropout_rate=DROPOUT_RATE)
+      model = make_model(input_shape=(IMG_SIZE, IMG_SIZE, 1), num_type2=4, dropout_rate=DROPOUT_RATE)
       # Save model graph to file
       tf.compat.v1.keras.utils.plot_model(model, show_shapes=True, to_file= PATH + "model.png")
 
@@ -250,6 +251,24 @@ def load_image_for_gen(filename):
     return np.array(Image.open(filename).resize((IMG_SIZE, IMG_SIZE), Image.ANTIALIAS))
 
 max_length = 80002*2
+
+def get_data_for_pgm_generator(images_count, images_start = 0):
+    i = 0
+    base_folder = 'C:/mary_study/training'
+    stego_folder = os.path.join(base_folder, '50')
+    cover_folder = os.path.join(base_folder, 'Cover')
+    stego_image_filenames = [os.path.join(stego_folder, x) for x in os.listdir(stego_folder)[images_start:images_start+images_count]]
+    cover_image_filenames = [os.path.join(cover_folder, x) for x in os.listdir(cover_folder)[images_start:images_start+images_count]]
+    filenames = []
+    labels = {}
+    for filename in stego_image_filenames:
+        filenames.append(filename)
+        labels[filename] = 1
+    for filename in cover_image_filenames:
+        filenames.append(filename)
+        labels[filename] = 0
+    return filenames, labels
+
 def image_generator():
     i = 0
     base_folder = 'C:/mary_study/training'
@@ -269,72 +288,34 @@ def image_generator():
         i+=1
 
 def train_model(model):
-    # tf.compat.v1.enable_eager_execution()
-    # X_train, X_val, y_train, y_val = train_data
-    
-    from tensorflow.keras.preprocessing.image import ImageDataGenerator
-    history_of_training = []
-    # gen = ImageDataGenerator(validation_split=0.25)
-    # generator = gen.flow_from_directory('', 
-    #     target_size=(512,512), 
-    #     #class_mode='binary',
-    #     classes=['50', 'Cover'],
-    #     batch_size=8)
-
-    ds_series = tf.data.Dataset.from_generator(
-        image_generator, 
-        output_types=(tf.int32, tf.uint8),
-        output_shapes=((), (IMG_SIZE,IMG_SIZE)))
-
-
-    # ids, sequence_batch = next(iter(ds_series))
-    # print(ids.numpy())
-    # print()
-    # print(sequence_batch.numpy())
-
-    load_weights_if_exists(model)
+    from generators import PgmDataGenerator
+    params = {
+        'dimension': (IMG_SIZE, IMG_SIZE),
+        'batch_size': BATCH_SIZE,
+        'n_classes': 2,
+        'n_channels': 1,
+        'shuffle': True
+    }
+    start = time()
+    train_filenames, train_labels = get_data_for_pgm_generator(2000)
+    val_filenames, val_labels = get_data_for_pgm_generator(2000, 2000)
+    training_generator = PgmDataGenerator(train_filenames, train_labels, **params)
+    val_generator = PgmDataGenerator(val_filenames, val_labels, **params)
 
     save_callback = tf.keras.callbacks.ModelCheckpoint(
             filepath=CHECKPOINT_PATH,
             verbose=1,
             save_weights_only=True
         )
+    model.fit(training_generator, validation_data = val_generator, epochs = EPOCHS, callbacks = [save_callback])
+    # model.fit_generator(generator = training_generator,
+    #                     validation_data = val_generator,
+    #                     use_multiprocessing = True,
+    #                     workers = 6)
+
+    
     model.save_weights(CHECKPOINT_PATH.format(epoch=0))
-    # model.fit(ds_series,
-    #     # batch_size=BATCH_SIZE,
-    #     epochs=EPOCHS, 
-    #     callbacks=[save_callback],
-    #     verbose=1)
-
-    start = time()
-    # Get training data
-    # train_data = get_train_data()
-    # Clear RAM unused data
-    # clear_heavy_memory_storage()
-
-    for epoch in range(EPOCHS):
-        print(f'Epoch {epoch}/{EPOCHS}')
-        epoch_start = time()
-        # batches = 0
-        batches = 0
-        for x_batch, y_batch in ds_series.batch(BATCH_SIZE):
-            history = model.fit(y_batch, x_batch)
-            history_of_training.append(history.history)
-            batches +=1
-            if batches >= 80002 / BATCH_SIZE:
-                break
-        epoch_min_elapsed = (time() - epoch_start) / 60 
-        path_to_save = CHECKPOINT_PATH.format(epoch=epoch)
-        print(f'Saving model to {path_to_save}')
-        model.save_weights(path_to_save)
-        print("{0:.2f} min elapsed for epoch {1}".format(epoch_min_elapsed, epoch))
-
-    import pickle 
-    filehandler = open(f'D:/mary_study/history_training_{prefix}_{EMBEDDING_ALGORYTHM}_{LEVEL}_{IMAGES_TO_PICK}.pkl', 'w') 
-    pickle.dump(history_of_training, filehandler)
-    # config = tf.compat.v1.ConfigProto(device_count={"CPU": CPU_COUNT})
-    # with tf.compat.v1.Session(config=config, graph=tf.compat.v1.get_default_graph()) as session:
-    #     tf.compat.v1.keras.backend.set_session(session=session)
+   
     min_elapsed = (time() - start) / 60
     print("{0:.2f} min elapsed for training".format(min_elapsed))
 def load_weights_if_exists(model):
