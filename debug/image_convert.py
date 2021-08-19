@@ -18,17 +18,17 @@ parser.add_argument('-i', '--input-format', help='Input image format',
     choices=['png', 'jpeg', 'bmp', 'gif', 'pgm', 'tif'], required=True)
 parser.add_argument('-o', '--output-format', help='Output image format',
     choices=['png', 'jpeg', 'bmp', 'gif', 'tif', 'gif'], required=True)
-parser.add_argument('--size', nargs='+', type=int)
+parser.add_argument('-w', '--size', nargs='+', type=int)
 
 args = parser.parse_args()
 
-if (args.input_format == args.output_format):
+if (args.input_format == args.output_format and len(args.size) == 0):
     print('File formats should be different!')
 elif (args.source == args.destination):
     print('Source and destination should be different!')
 else:
     size = ()
-    if args.size.length > 0:
+    if len(args.size) > 0:
         size = tuple(args.size)
     images = glob.glob(f"{args.source}\*.{args.input_format}")
     if not os.path.exists(args.destination):
