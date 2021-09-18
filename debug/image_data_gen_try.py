@@ -28,14 +28,19 @@ from tensorflow.keras.callbacks import ModelCheckpoint
 import telebot
 from timeit import default_timer as timer
 
+from configparser import ConfigParser
+
+config = ConfigParser('config.ini')
+telegram_config = config['telegram']
+
 INPUT_SIZE = (256, 256)
 EPOCHS = 20
 BASE_PATH = 'E:/Mary/history'
 LAST_MODEL = 'E:/Mary/history/Training_mipod_3_png_05_08_2021_21_50_26/saved-model-ep_20-loss_0.33-val_loss_0.65.hdf5'
 LOAD_MODEL = False
 HISTORY_NAME = 'Training_suni_10'
-bot = telebot.TeleBot('1292996210:AAFVuU6mo6-rS2Tv6Xuy3ZucfdJzTaBN9PY')
-CHAT_ID = 337882617
+bot = telebot.TeleBot(telegram_config['token'])
+CHAT_ID = int(telegram_config['chat_id'])
 def define_model():
     return make_model(input_shape=(*INPUT_SIZE, 1), dropout_rate=0.1)
 
