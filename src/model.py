@@ -1,6 +1,6 @@
 import tensorflow.keras.layers as L
 from tensorflow.keras import Model, metrics
-from model_config import *
+#from model_config import *
 # from tensorflow.keras.metrics import AUC
 
 
@@ -55,7 +55,7 @@ def layer_type4(x_inp, filters, kernel_size=(3, 3), dropout_rate=0):
     return x
 
 
-def make_model(input_shape=(IMG_SIZE, IMG_SIZE, 3), num_type2=5, dropout_rate=0):
+def make_model(input_shape=(512, 512, 3), num_type2=5, dropout_rate=0):
     # I reduced the size (image size, filters and depth) of the original network because it was way to big
     inputs = L.Input(shape=input_shape)
     
